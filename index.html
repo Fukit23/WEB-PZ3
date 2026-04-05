@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель енергоменеджерів</title>
+    <style>
+        body { font-family: sans-serif; display: flex; gap: 40px; padding: 40px; }
+        .form-section { flex: 1; max-width: 400px; }
+        .list-section { flex: 2; }
+        .field { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; }
+        input, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f4f4f4; }
+    </style>
+</head>
+<body>
+
+    <div class="form-section">
+        <h2>Додати менеджера</h2>
+        <form id="managerForm">
+            <div class="field">
+                <label>Підприємство:</label>
+                <input type="text" id="enterprise" required>
+            </div>
+            <div class="field">
+                <label>ПІБ:</label>
+                <input type="text" id="fullName" required>
+            </div>
+            <div class="field">
+                <label>Сертифікат:</label>
+                <input type="text" id="certificate" required>
+            </div>
+            <div class="field">
+                <label>Додатково:</label>
+                <textarea id="extraCertificates"></textarea>
+            </div>
+            <div class="field">
+                <label>Контакти:</label>
+                <input type="text" id="contacts" required>
+            </div>
+            <button type="submit">Зберегти</button>
+        </form>
+    </div>
+
+    <div class="list-section">
+        <h2>Список підприємств та відповідальних</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Підприємство</th>
+                    <th>ПІБ</th>
+                    <th>Сертифікати</th>
+                    <th>Контакти</th>
+                </tr>
+            </thead>
+            <tbody id="managerTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById('managerForm');
+        
+        async function loadManagers() {
+            const response = await fetch('/get-managers');
+            const data = await response.json();
+            updateTable(data);
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('managerTable');
+            tbody.innerHTML = data.map(m => `
+                <tr>
+                    <td>${m.enterprise}</td>
+                    <td>${m.fullName}</td>
+                    <td>${m.certificate}${m.extraCertificates ? ', ' + m.extraCertificates : ''}</td>
+                    <td>${m.contacts}</td>
+                </tr>
+            `).join('');
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                enterprise: document.getElementById('enterprise').value,
+                fullName: document.getElementById('fullName').value,
+                certificate: document.getElementById('certificate').value,
+                extraCertificates: document.getElementById('extraCertificates').value,
+                contacts: document.getElementById('contacts').value
+            };
+
+            const response = await fetch('/submit-manager', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                updateTable(result.managers);
+                form.reset();
+            }
+        });
+
+        loadManagers();
+    </script>
+</body>
+</html>
